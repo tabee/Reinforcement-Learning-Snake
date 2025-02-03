@@ -21,8 +21,6 @@ class ScoreLoggingCallback(BaseCallback):
         if self.episode_scores:
             avg_score = sum(self.episode_scores) / len(self.episode_scores)
             self.logger.record("rollout/score", avg_score)
-            #if self.verbose > 0:
-                #print(f"Durchschnittlicher Score dieses Rollouts: {avg_score:.2f}")
             # Zurücksetzen für den nächsten Rollout
             self.episode_scores = []
 
@@ -37,7 +35,7 @@ def main():
     score_callback = ScoreLoggingCallback(verbose=1)
     
     # Trainiere für Zeitschritte und verwende dabei den Callback
-    model.learn(total_timesteps=1000000, callback=score_callback)
+    model.learn(total_timesteps=10_000_000, callback=score_callback)
     model.save("dqn_snake")
 
     # Testlauf des trainierten Modells:
