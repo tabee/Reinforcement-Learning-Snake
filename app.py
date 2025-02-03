@@ -8,6 +8,7 @@ socketio = SocketIO(app)
 
 GRID_SIZE = 20
 WIDTH, HEIGHT = 400, 400
+SPEED = 0.2
 
 # Globale Spielvariablen
 game_running = False
@@ -50,7 +51,7 @@ def move_snake():
         print("Aktuelle Snake:", snake)
         print("Aktuelles Essen:", food)
         socketio.emit('game_state', {'snake': snake, 'food': food})
-        time.sleep(0.1)
+        time.sleep(SPEED)
 
 @app.route('/')
 def index():
