@@ -1,2 +1,5 @@
 Flask
 Flask-SocketIO
+gymnasium
+numpy
+stable-baselines3

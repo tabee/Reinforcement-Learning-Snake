@@ -1,6 +1,7 @@
 # Reinforcement-Learning-Snake
 
-Simple snake game.
+Dieses Projekt implementiert eine Snake-Umgebung gemäß dem OpenAI Gym Standard und trainiert einen Reinforcement Learning Agenten (DQN) mit stable-baselines3.
+
 
 ## Installation
 
