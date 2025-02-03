@@ -48,10 +48,12 @@ def move_snake():
             }
         else:
             snake.pop()
+        score = len(snake) - 1  # Score berechnen
         print("Aktuelle Snake:", snake)
         print("Aktuelles Essen:", food)
-        socketio.emit('game_state', {'snake': snake, 'food': food})
+        socketio.emit('game_state', {'snake': snake, 'food': food, 'score': score})
         time.sleep(SPEED)
+
 
 @app.route('/')
 def index():
