@@ -6,6 +6,12 @@ Dieses Projekt implementiert eine Snake-Umgebung gemäss dem OpenAI Gym Standard
 
 Dieses Projekt besteht aus einer Snake-Umgebung, die mit Gymnasium erstellt wurde, und einem DQN-Agenten, der mit stable-baselines3 trainiert wird. Die Umgebung und der Agent werden verwendet, um das Verhalten der Schlange zu steuern und zu optimieren.
 
+
+![Bildschirmfoto vom 2025-02-04 00-35-31](https://github.com/tabee/Reinforcement-Learning-Snake/blob/main/Bildschirmfoto%20vom%202025-02-04%2000-35-31.png)
+
+
+
+
 ## Verzeichnisstruktur
 
 ```bash
