@@ -8,7 +8,7 @@ Dieses Projekt besteht aus einer Snake-Umgebung, die mit Gymnasium erstellt wurd
 
 ## Verzeichnisstruktur
 
-```
+```bash
 __pycache__/
 .gitignore
 app.py
@@ -38,6 +38,7 @@ pip install -r requirements.txt
 ```
 
 ## Start Training
+
 Starte das Training des DQN-Agenten mit:
 
 ```bash
