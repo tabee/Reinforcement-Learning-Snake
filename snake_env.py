@@ -17,14 +17,13 @@ class SnakeEnv(gym.Env):
         # Aktionen: 0 = oben, 1 = rechts, 2 = unten, 3 = links
         self.action_space = spaces.Discrete(4)
 
-        # Beobachtungsraum: Matrix (0 = leer, 1 = Schlangenkörper, 2 = Essen)
-        self.observation_space = spaces.Box(low=0, high=2, 
-                                            shape=(self.rows, self.cols), dtype=np.int32)
+        # Beobachtungsraum: Wir nutzen einen 9-dimensionalen Feature-Vektor für das Training.
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(9,), dtype=np.float32)
         self.reset()
 
     def reset(self, **kwargs):
         """Setzt die Umgebung zurück und gibt (observation, info) zurück."""
-        self.snake = [(self.cols // 2, self.rows // 2)]  # Start in der Mitte
+        self.snake = [(self.cols // 2, self.rows // 2)]  # Schlange startet in der Mitte
         self.direction = (1, 0)  # startet nach rechts
         self.done = False
         self.score = 0
@@ -41,21 +40,21 @@ class SnakeEnv(gym.Env):
     def step(self, action):
         """
         Führt einen Schritt aus und gibt (observation, reward, terminated, truncated, info) zurück.
-        Terminierung (terminated) tritt bei Kollision auf.
+        Terminierung (terminated) tritt bei einer Kollision auf.
         """
-        # Bestimme neue Richtung
+        # Bestimme neue Richtung anhand der Aktion:
         if action == 0:
-            new_direction = (0, -1)
+            new_direction = (0, -1)  # oben
         elif action == 1:
-            new_direction = (1, 0)
+            new_direction = (1, 0)   # rechts
         elif action == 2:
-            new_direction = (0, 1)
+            new_direction = (0, 1)   # unten
         elif action == 3:
-            new_direction = (-1, 0)
+            new_direction = (-1, 0)  # links
         else:
             new_direction = self.direction
 
-        # Verhindere U-Turns (sofern Schlange länger als 1 Segment)
+        # Verhindere U-Turns (falls die Schlange länger als 1 Segment ist)
         if len(self.snake) > 1 and (new_direction[0] == -self.direction[0] and new_direction[1] == -self.direction[1]):
             new_direction = self.direction
         else:
@@ -64,48 +63,87 @@ class SnakeEnv(gym.Env):
         head = self.snake[0]
         new_head = (head[0] + self.direction[0], head[1] + self.direction[1])
 
-        # Prüfe auf Kollision (Wand oder Selbstkollision)
+        # Prüfe auf Kollision (mit Wand oder dem eigenen Körper)
         if (new_head in self.snake or
             new_head[0] < 0 or new_head[0] >= self.cols or
             new_head[1] < 0 or new_head[1] >= self.rows):
-            reward = -10
-            terminated = True  # Spiel beendet wegen Kollision
+            reward = -1
+            terminated = True
             truncated = False
             return self._get_observation(), reward, terminated, truncated, {}
 
         # Schlange bewegen
         self.snake.insert(0, new_head)
-
-        # Prüfe, ob Essen erreicht wurde
         if new_head == self.food:
-            reward = 10
+            reward = 1
             self.score += 1
             self._place_food()
         else:
             reward = 0
-            self.snake.pop()  # Entferne das letzte Segment
+            self.snake.pop()  # Entferne das letzte Segment, wenn kein Essen erreicht wurde
 
-        # Kleine Schrittstrafe
-        reward += -0.6
-
+        # Füge eine kleine Schrittstrafe hinzu
+        reward += -0.02
         terminated = False
         truncated = False
+        info = {"score": self.score}
 
-        return self._get_observation(), reward, terminated, truncated, {}
+        return self._get_observation(), reward, terminated, truncated, info
 
     def _get_observation(self):
-        """Erzeugt eine Matrix als Beobachtung des aktuellen Zustands."""
-        obs = np.zeros((self.rows, self.cols), dtype=np.int32)
+        """
+        Erzeugt einen 9-dimensionalen Feature-Vektor:
+        [danger_ahead, danger_left, danger_right, food_dx, food_dy, dir_right, dir_down, dir_left, dir_up]
+        """
+        head = self.snake[0]
+
+        def is_danger(cell):
+            x, y = cell
+            if x < 0 or x >= self.cols or y < 0 or y >= self.rows:
+                return 1.0
+            if cell in self.snake:
+                return 1.0
+            return 0.0
+
+        # Gefahrenindikatoren
+        danger_ahead = is_danger((head[0] + self.direction[0], head[1] + self.direction[1]))
+        left_dir = (-self.direction[1], self.direction[0])
+        danger_left = is_danger((head[0] + left_dir[0], head[1] + left_dir[1]))
+        right_dir = (self.direction[1], -self.direction[0])
+        danger_right = is_danger((head[0] + right_dir[0], head[1] + right_dir[1]))
+
+        # Relative Position des Essens (normalisiert)
+        food_dx = (self.food[0] - head[0]) / self.cols
+        food_dy = (self.food[1] - head[1]) / self.rows
+
+        # One-Hot-Encoding der aktuellen Richtung (Reihenfolge: [rechts, unten, links, oben])
+        if self.direction == (1, 0):
+            dir_onehot = [1, 0, 0, 0]
+        elif self.direction == (0, 1):
+            dir_onehot = [0, 1, 0, 0]
+        elif self.direction == (-1, 0):
+            dir_onehot = [0, 0, 1, 0]
+        elif self.direction == (0, -1):
+            dir_onehot = [0, 0, 0, 1]
+        else:
+            dir_onehot = [0, 0, 0, 0]
+
+        obs_vector = np.array([danger_ahead, danger_left, danger_right, food_dx, food_dy] + dir_onehot, dtype=np.float32)
+        return obs_vector
+
+    def get_grid(self):
+        """Gibt das Gitter (2D-Array) für Visualisierungszwecke zurück (0 = leer, 1 = Schlange, 2 = Essen)."""
+        grid = np.zeros((self.rows, self.cols), dtype=np.int32)
         for (x, y) in self.snake:
-            obs[y, x] = 1
-        obs[self.food[1], self.food[0]] = 2
-        return obs
+            grid[y, x] = 1
+        grid[self.food[1], self.food[0]] = 2
+        return grid
 
     def render(self, mode='human'):
-        """Einfache textbasierte Darstellung."""
-        obs = self._get_observation()
+        """Einfache textbasierte Darstellung des Gitters."""
+        grid = self.get_grid()
         render_str = ""
-        for row in obs:
+        for row in grid:
             for cell in row:
                 if cell == 0:
                     render_str += ". "
