@@ -11,7 +11,13 @@ Installiere die Abhängigkeiten mit:
 pip install -r requirements.txt
 ```
 
-## Start
+## Start Training
+
+```bash
+python train.py
+```
+
+## Start Demo
 
 ```bash
 python app.py
