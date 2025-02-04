@@ -29,13 +29,13 @@ def main():
     # Überprüfe, ob die Umgebung dem Gym-Interface entspricht
     check_env(env, warn=True)
 
-    model = DQN("MlpPolicy", env, verbose=1)
+    model = DQN("MlpPolicy", env, verbose=1, learning_rate=0.001)
     
     # Erstelle den Score Logging Callback
     score_callback = ScoreLoggingCallback(verbose=1)
     
     # Trainiere für Zeitschritte und verwende dabei den Callback
-    model.learn(total_timesteps=100_000_000, callback=score_callback)
+    model.learn(total_timesteps=2_000_000, progress_bar=True, callback=score_callback)
     model.save("dqn_snake")
 
     # Testlauf des trainierten Modells:
