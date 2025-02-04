@@ -33,7 +33,15 @@ train.py
 
 ## Installation
 
-Installiere die Abhängigkeiten mit:
+Optional; installiere die Abhängigkeiten mit:
+
+```bash
+sudo apt install python3.12-venv
+python3 -m venv snake
+source snake/bin/activate
+```
+
+Installiere requirements
 
 ```bash
 pip install -r requirements.txt

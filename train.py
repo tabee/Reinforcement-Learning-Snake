@@ -35,7 +35,7 @@ def main():
     score_callback = ScoreLoggingCallback(verbose=1)
     
     # Trainiere für Zeitschritte und verwende dabei den Callback
-    model.learn(total_timesteps=100_000, callback=score_callback)
+    model.learn(total_timesteps=100_000_000, callback=score_callback)
     model.save("dqn_snake")
 
     # Testlauf des trainierten Modells:
