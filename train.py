@@ -1,5 +1,5 @@
 from snake_env import SnakeEnv
-from stable_baselines3 import DQN
+from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.callbacks import BaseCallback
 
@@ -24,28 +24,52 @@ class ScoreLoggingCallback(BaseCallback):
             # Zurücksetzen für den nächsten Rollout
             self.episode_scores = []
 
-def main():
+def train_ppo(total_timesteps=500_000_000):
     env = SnakeEnv()
-    # Überprüfe, ob die Umgebung dem Gym-Interface entspricht
-    check_env(env, warn=True)
-
-    model = DQN("MlpPolicy", env, verbose=1, learning_rate=0.001)
+    model = PPO("MlpPolicy", env, verbose=1, learning_rate=0.001)
     
-    # Erstelle den Score Logging Callback
+    # Überprüfe die Umgebung
+    check_env(env, warn=True)
+    
+    # Callback, um den Score während des Trainings zu loggen
     score_callback = ScoreLoggingCallback(verbose=1)
     
-    # Trainiere für Zeitschritte und verwende dabei den Callback
-    model.learn(total_timesteps=2_000_000, progress_bar=True, callback=score_callback)
-    model.save("dqn_snake")
+    # Trainiere das Modell
+    model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
+    
+    # Speichere das trainierte Modell
+    model.save("ppo_snake")
+    
+    return model
 
-    # Testlauf des trainierten Modells:
-    obs, _ = env.reset()  # Hier wird nur die Beobachtung entpackt
+def train_dqn(total_timesteps=500_000_000):
+    env = SnakeEnv()
+    model = DQN("MlpPolicy", env, verbose=1, learning_rate=0.001)
+    
+    # Überprüfe die Umgebung
+    check_env(env, warn=True)
+    
+    # Callback, um den Score während des Trainings zu loggen
+    score_callback = ScoreLoggingCallback(verbose=1)
+    
+    # Trainiere das Modell
+    model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
+    
+    # Speichere das trainierte Modell
+    model.save("dqn_snake")
+    
+    return model
+
+def test(model):
+    ''' Testet das trainierte Modell '''
+    env = SnakeEnv()
+    model = model
+    obs, _ = env.reset()
     done = False
     total_reward = 0
 
     while not done:
         action, _states = model.predict(obs)
-        # Da step() jetzt 5 Werte zurückgibt, entpacken wir entsprechend:
         obs, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
         total_reward += reward
@@ -55,5 +79,11 @@ def main():
     print("Episode beendet. Total Reward:", total_reward)
 
 if __name__ == "__main__":
-    main()
+
+    dqn_model = train_dqn(1000)
+    test(dqn_model)
+    
+    ppo_model = train_ppo(1000)
+    test(ppo_model)
+
 
