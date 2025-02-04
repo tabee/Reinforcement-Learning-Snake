@@ -7,12 +7,21 @@
         canvas { background: #000; display: block; margin: 20px auto; }
         #score { text-align: center; font-size: 1.5em; color: #333; }
         #startButton { display: block; margin: 20px auto; }
+        #modelSelect { display: block; margin: 20px auto; }
     </style>
 </head>
 <body>
     <div id="score">Score: 0</div>
+
+    <!-- Dropdown zur Modellwahl -->
+    <select id="modelSelect">
+        <option value="DQN">DQN</option>
+        <option value="PPO">PPO</option>
+    </select>
+
     <button id="startButton">Testlauf starten</button>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
+    
     <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
     <script>
         const socket = io();
@@ -20,32 +29,31 @@
         const ctx = canvas.getContext("2d");
         const scoreDiv = document.getElementById("score");
         const startButton = document.getElementById("startButton");
+        const modelSelect = document.getElementById("modelSelect");
         const cellSize = 20;  // Muss zum grid_size der Umgebung passen
 
+        // Event-Listener für den Startbutton
         startButton.addEventListener("click", () => {
-            socket.emit('start_test');
+            const selectedModel = modelSelect.value;  // Holen der aktuellen Modellauswahl
+            socket.emit('switch_model', selectedModel);  // Sende das gewählte Modell an den Server
+            socket.emit('start_test');  // Starte den Test
             startButton.disabled = true;
         });
 
         // Update-Zustand vom Server empfangen
         socket.on('state_update', (data) => {
-            // data.state ist eine Matrix (Zeilen x Spalten)
             const state = data.state;
             scoreDiv.innerText = "Score: " + data.score;
-            // Zeichne den aktuellen Zustand
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let y = 0; y < state.length; y++) {
                 for (let x = 0; x < state[0].length; x++) {
                     if (state[y][x] === 1) {
-                        // Schlangenkörper (grün)
-                        ctx.fillStyle = "lime";
+                        ctx.fillStyle = "lime";  // Schlangenkörper
                         ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
                     } else if (state[y][x] === 2) {
-                        // Essen (rot)
-                        ctx.fillStyle = "red";
+                        ctx.fillStyle = "red";  // Essen
                         ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
                     }
-                    // Leere Felder bleiben schwarz
                 }
             }
         });
@@ -54,6 +62,7 @@
             alert("Episode beendet! Endscore: " + data.score);
             startButton.disabled = false;
         });
+
     </script>
 </body>
 </html>

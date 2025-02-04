@@ -1,14 +1,11 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 import time
-from stable_baselines3 import DQN
+from stable_baselines3 import DQN, PPO
 from snake_env import SnakeEnv
 
 app = Flask(__name__)
 socketio = SocketIO(app)
-
-# Lade das trainierte Modell (stelle sicher, dass "dqn_snake.zip" existiert)
-model = DQN.load("dqn_snake")
 
 # Erstelle die Umgebung
 env = SnakeEnv()
@@ -16,6 +13,16 @@ env = SnakeEnv()
 @app.route('/')
 def index():
     return render_template('index.html')
+
+# Socket-Event, um das Modell zu wechseln
+@socketio.on('switch_model')
+def switch_model(model_name):
+    global model
+    if model_name == "DQN":
+        model = DQN.load("dqn_snake")
+    elif model_name == "PPO":
+        model = PPO.load("ppo_snake")
+    emit('model_switched', {'model': model_name})
 
 @socketio.on('start_test')
 def start_test():
