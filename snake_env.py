@@ -63,11 +63,17 @@ class SnakeEnv(gym.Env):
         head = self.snake[0]
         new_head = (head[0] + self.direction[0], head[1] + self.direction[1])
 
-        # Prüfe auf Kollision (mit Wand oder dem eigenen Körper)
-        if (new_head in self.snake or
-            new_head[0] < 0 or new_head[0] >= self.cols or
+        # Prüfe auf Kollision mit eigenem Körper
+        if new_head in self.snake:
+            reward = -1.05   # Reward für Kollision mit eigenem Körper
+            terminated = True
+            truncated = False
+            return self._get_observation(), reward, terminated, truncated, {}
+
+        # Prüfe auf Kollision mit Wand
+        if (new_head[0] < 0 or new_head[0] >= self.cols or
             new_head[1] < 0 or new_head[1] >= self.rows):
-            reward = -1
+            reward = -1   # Reward für Kollision mit der Wand
             terminated = True
             truncated = False
             return self._get_observation(), reward, terminated, truncated, {}
@@ -83,7 +89,7 @@ class SnakeEnv(gym.Env):
             self.snake.pop()  # Entferne das letzte Segment, wenn kein Essen erreicht wurde
 
         # Füge eine kleine Schrittstrafe hinzu
-        reward += -0.02
+        reward += -0.01
         terminated = False
         truncated = False
         info = {"score": self.score}
