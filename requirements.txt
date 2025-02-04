@@ -2,4 +2,4 @@ Flask
 Flask-SocketIO
 gymnasium
 numpy
-stable-baselines3
+stable-baselines3[extra]
