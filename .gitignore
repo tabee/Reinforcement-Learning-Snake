@@ -1,7 +1,5 @@
 # reinforcement learning snake game
 tensorboard/
-ppo_snake.zip   
-dqn_snake.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
