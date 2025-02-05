@@ -1,18 +1,17 @@
 from snake_env import SnakeEnv
-from stable_baselines3 import DQN, PPO
+from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.callbacks import BaseCallback
 
 class ScoreLoggingCallback(BaseCallback):
     def __init__(self, verbose=0):
-        super(ScoreLoggingCallback, self).__init__(verbose)
-        self.episode_scores = []  # Liste, um Score-Werte während eines Rollouts zu sammeln
+        super().__init__(verbose)
+        self.episode_scores = []  # Sammlung der Score-Werte
 
     def _on_step(self) -> bool:
-        # In VecEnvs wird in self.locals["infos"] ein Liste von info-Dictionaries bereitgestellt.
+        # In VecEnvs liegt in self.locals["infos"] eine Liste von info-Dicts vor.
         infos = self.locals.get("infos", [])
         for info in infos:
-            # Falls der Score im Info-Dictionary vorhanden ist, speichern wir ihn
             if "score" in info:
                 self.episode_scores.append(info["score"])
         return True
@@ -20,51 +19,34 @@ class ScoreLoggingCallback(BaseCallback):
     def _on_rollout_end(self) -> None:
         if self.episode_scores:
             avg_score = sum(self.episode_scores) / len(self.episode_scores)
-            self.logger.record("rollout/score", avg_score)
-            # Zurücksetzen für den nächsten Rollout
+            # TensorBoard-Log über den internen Logger
+            self.logger.record("rollout/avg_score", avg_score)
             self.episode_scores = []
 
 def train_ppo(total_timesteps=1_000_000):
     env = SnakeEnv()
-    model = PPO("MlpPolicy", env, verbose=1, learning_rate=0.001)
-    
-    # Überprüfe die Umgebung
     check_env(env, warn=True)
-    
-    # Callback, um den Score während des Trainings zu loggen
+    model = PPO("MlpPolicy", env, verbose=1, learning_rate=0.001,
+                tensorboard_log="./tensorboard/")
     score_callback = ScoreLoggingCallback(verbose=1)
-    
-    # Trainiere das Modell
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
-    
-    # Speichere das trainierte Modell
     model.save("ppo_snake")
-    
     return model
 
 def train_dqn(total_timesteps=1_000_000):
     env = SnakeEnv()
-    model = DQN("MlpPolicy", env, verbose=1, learning_rate=0.001)
-    
-    # Überprüfe die Umgebung
     check_env(env, warn=True)
-    
-    # Callback, um den Score während des Trainings zu loggen
+    model = DQN("MlpPolicy", env, verbose=1, learning_rate=0.001,
+                tensorboard_log="./tensorboard/")
     score_callback = ScoreLoggingCallback(verbose=1)
-    
-    # Trainiere das Modell
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
-    
-    # Speichere das trainierte Modell
     model.save("dqn_snake")
-    
     return model
 
 def test(model):
-    ''' Testet das trainierte Modell '''
+    """Testet das trainierte Modell"""
     env = SnakeEnv()
-    model = model
-    obs, _ = env.reset()
+    obs, _ = env.reset()  # Bei neueren Gym-Versionen: reset() liefert (obs, info)
     done = False
     total_reward = 0
 
@@ -74,16 +56,15 @@ def test(model):
         done = terminated or truncated
         total_reward += reward
         env.render()
-        print("Reward:", reward, "Total Score:", env.score)
-
+        print("Reward:", reward, "Score:", getattr(env, "score", "unbekannt"))
+        
     print("Episode beendet. Total Reward:", total_reward)
 
 if __name__ == "__main__":
-
-    dqn_model = train_dqn(50_000_000)
+    # Beispiel: Training und Test von DQN
+    dqn_model = train_dqn(total_timesteps=100_000)
     test(dqn_model)
     
-    ppo_model = train_ppo(50_000_000)
+    # Beispiel: Training und Test von PPO
+    ppo_model = train_ppo(total_timesteps=100_000)
     test(ppo_model)
-
-
