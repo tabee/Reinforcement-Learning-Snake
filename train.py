@@ -57,10 +57,29 @@ def train_ppo(total_timesteps=10_000_000):
     model.save("ppo_snake")
     return model
 
+def test(model):
+    ''' Testet das trainierte Modell '''
+    env = SnakeEnv()
+    model = model
+    obs, _ = env.reset()
+    done = False
+    total_reward = 0
+
+    while not done:
+        action, _states = model.predict(obs)
+        obs, reward, terminated, truncated, info = env.step(action)
+        done = terminated or truncated
+        total_reward += reward
+        env.render()
+        print("Reward:", reward, "Total Score:", env.score)
+
+    print("Episode beendet. Total Reward:", total_reward)
+
 if __name__ == "__main__":
     # Beispiel: Training und Test von DQN
-    # dqn_model = train_dqn(total_timesteps=1_000_000)
+    dqn_model = train_dqn(total_timesteps=1_000_000)
+    test(dqn_model)
     
     # Beispiel: Training und Test von PPO
     ppo_model = train_ppo(total_timesteps=1_000_000)
-
+    test(ppo_model)
