@@ -3,3 +3,4 @@ Flask-SocketIO
 gymnasium
 numpy
 stable-baselines3[extra]
+tensorflow

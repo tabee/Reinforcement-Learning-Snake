@@ -33,7 +33,7 @@ train.py
 
 ## Installation
 
-Optional; installiere die Abhängigkeiten mit:
+Optional: Erstelle und starte venv
 
 ```bash
 sudo apt install python3.12-venv
@@ -48,6 +48,12 @@ pip install -r requirements.txt
 ```
 
 ## Start Training
+
+Optional: Starte tensorboard (optional):
+
+```bash
+tensorboard --logdir=./tensorboard/
+```
 
 Starte das Training des DQN-Agenten mit:
 
