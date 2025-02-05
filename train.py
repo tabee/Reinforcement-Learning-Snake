@@ -24,7 +24,7 @@ class ScoreLoggingCallback(BaseCallback):
             # Zurücksetzen für den nächsten Rollout
             self.episode_scores = []
 
-def train_ppo(total_timesteps=500_000_000):
+def train_ppo(total_timesteps=1_000_000):
     env = SnakeEnv()
     model = PPO("MlpPolicy", env, verbose=1, learning_rate=0.001)
     
@@ -42,7 +42,7 @@ def train_ppo(total_timesteps=500_000_000):
     
     return model
 
-def train_dqn(total_timesteps=500_000_000):
+def train_dqn(total_timesteps=1_000_000):
     env = SnakeEnv()
     model = DQN("MlpPolicy", env, verbose=1, learning_rate=0.001)
     
