@@ -80,10 +80,10 @@ def test(model):
 
 if __name__ == "__main__":
 
-    dqn_model = train_dqn(100)
+    dqn_model = train_dqn(50_000_000)
     test(dqn_model)
     
-    ppo_model = train_ppo(1000000)
+    ppo_model = train_ppo(50_000_000)
     test(ppo_model)
 
 
