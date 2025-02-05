@@ -46,11 +46,20 @@ def train_ppo(total_timesteps=10_000_000):
     env = SnakeEnv()
     check_env(env, warn=True)
     model = PPO(
-        "MlpPolicy", 
-        env, 
-        verbose=1, 
-        learning_rate=0.001, 
-        tensorboard_log="./tensorboard/",    
+        "MlpPolicy",
+        env,
+        verbose=1,
+        learning_rate=0.0003,   # Geringere Lernrate für stabileres Training
+        n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden
+        batch_size=64,          # Mini-Batch-Größe
+        n_epochs=10,            # Mehrfache Updates pro Rollout
+        gamma=0.99,             # Diskontierungsfaktor
+        gae_lambda=0.95,        # Vorteilsschätzung
+        clip_range=0.2,         # Clipping der Policy-Updates
+        ent_coef=0.01,          # Entropie-Koeffizient zur Förderung der Exploration
+        vf_coef=0.5,            # Gewichtung der Wertfunktion
+        max_grad_norm=0.5,      # Gradient Clipping
+        tensorboard_log="./tensorboard/"
     )
     score_callback = ScoreLoggingCallback(verbose=1)
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
@@ -77,9 +86,9 @@ def test(model):
 
 if __name__ == "__main__":
     # Beispiel: Training und Test von DQN
-    dqn_model = train_dqn(total_timesteps=1_000_000)
+    dqn_model = train_dqn(total_timesteps=10_000_000)
     test(dqn_model)
     
     # Beispiel: Training und Test von PPO
-    ppo_model = train_ppo(total_timesteps=1_000_000)
+    ppo_model = train_ppo(total_timesteps=10_000_000)
     test(ppo_model)
