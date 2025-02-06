@@ -12,13 +12,6 @@
 </head>
 <body>
     <div id="score">Score: 0</div>
-
-    <!-- Dropdown zur Modellwahl -->
-    <select id="modelSelect">
-        <option value="DQN">DQN</option>
-        <option value="PPO">PPO</option>
-    </select>
-
     <button id="startButton">Testlauf starten</button>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
     
@@ -34,8 +27,6 @@
 
         // Event-Listener für den Startbutton
         startButton.addEventListener("click", () => {
-            const selectedModel = modelSelect.value;  // Holen der aktuellen Modellauswahl
-            socket.emit('switch_model', selectedModel);  // Sende das gewählte Modell an den Server
             socket.emit('start_test');  // Starte den Test
             startButton.disabled = true;
         });

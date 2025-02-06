@@ -22,36 +22,19 @@ class ScoreLoggingCallback(BaseCallback):
         if self.episode_scores:
             avg_score = sum(self.episode_scores) / len(self.episode_scores)
             # TensorBoard-Log über den internen Logger
-            self.logger.record("rollout/avg_score", avg_score)
+            self.logger.record("./rollout/avg_score", avg_score)
             self.episode_scores = []
 
-def train_dqn(total_timesteps=10_000_000):
-    env = SnakeEnv()
-    check_env(env, warn=True)
-    model = DQN(
-        "MlpPolicy", 
-        env, 
-        verbose=1, 
-        learning_rate=0.001,
-        tensorboard_log="./tensorboard/",
-        exploration_fraction=0.2,  # 20% der total_timesteps für Exploration
-        exploration_final_eps=0.05  # Endwert für epsilon
-    )
-    score_callback = ScoreLoggingCallback(verbose=1)
-    model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
-    model.save("dqn_snake")
-    return model
-
-def train_ppo(total_timesteps=10_000_000):
+def train_ppo(total_timesteps):
     env = SnakeEnv()
     check_env(env, warn=True)
     model = PPO(
         "MlpPolicy",
         env,
         verbose=1,
-        learning_rate=0.0003,   # Geringere Lernrate für stabileres Training
-        n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden
-        batch_size=64,          # Mini-Batch-Größe
+        learning_rate=0.0001,   # Geringere Lernrate für stabileres Training
+        n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden > Falls die Episoden länger sind (1000+ Schritte), kannst du bei 1024 bleiben.
+        batch_size=128,          # Mini-Batch-Größe
         n_epochs=10,            # Mehrfache Updates pro Rollout
         gamma=0.99,             # Diskontierungsfaktor
         gae_lambda=0.95,        # Vorteilsschätzung
@@ -63,10 +46,10 @@ def train_ppo(total_timesteps=10_000_000):
     )
     score_callback = ScoreLoggingCallback(verbose=1)
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
-    model.save("ppo_snake")
+    model.save("./models/ppo_snake")
     return model
 
-def test_avg_score(model, num_episodes=1000):
+def test_avg_score(model, num_episodes=100):
     ''' Testet das trainierte Modell und gibt den durchschnittlichen Score zurück '''
     env = SnakeEnv()
     model = model
@@ -109,13 +92,9 @@ def test(model):
     print("Episode beendet. Total Reward:", total_reward, ". Total Score:", env.score)
 
 if __name__ == "__main__":
-    # Beispiel: Training und Test von DQN
-    dqn_model = train_dqn(total_timesteps=10_000_000)
-    #dqn_model = DQN.load("dqn_snake")
-    test_avg_score(dqn_model) # Durchschnittlicher Score: 15.335 über 1000 Episoden
-    
     # Beispiel: Training und Test von PPO
     ppo_model = train_ppo(total_timesteps=10_000_000)
-    #ppo_model = PPO.load("ppo_snake")
+    ppo_model = PPO.load("./models/ppo_snake")
+    test(ppo_model)
     test_avg_score(ppo_model) # Durchschnittlicher Score: 28.898 über 1000 Episoden
     

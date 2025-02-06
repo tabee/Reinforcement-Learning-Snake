@@ -14,18 +14,9 @@ env = SnakeEnv()
 def index():
     return render_template('index.html')
 
-# Socket-Event, um das Modell zu wechseln
-@socketio.on('switch_model')
-def switch_model(model_name):
-    global model
-    if model_name == "DQN":
-        model = DQN.load("dqn_snake")
-    elif model_name == "PPO":
-        model = PPO.load("ppo_snake")
-    emit('model_switched', {'model': model_name})
-
 @socketio.on('start_test')
 def start_test():
+    model = PPO.load("./models/ppo_snake")
     obs, _ = env.reset()  # Hier wird nur die Beobachtung (Feature-Vektor) entpackt
     done = False
     while not done:
