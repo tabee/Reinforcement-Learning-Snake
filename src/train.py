@@ -32,9 +32,9 @@ def train_ppo(total_timesteps):
         "MlpPolicy",
         env,
         verbose=1,
-        learning_rate=0.0001,   # Geringere Lernrate für stabileres Training
-        n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden > Falls die Episoden länger sind (1000+ Schritte), kannst du bei 1024 bleiben.
-        batch_size=128,          # Mini-Batch-Größe
+        learning_rate=0.003,    # Geringere Lernrate für stabileres Training
+        n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden
+        batch_size=64,          # Mini-Batch-Größe
         n_epochs=10,            # Mehrfache Updates pro Rollout
         gamma=0.99,             # Diskontierungsfaktor
         gae_lambda=0.95,        # Vorteilsschätzung
@@ -93,8 +93,8 @@ def test(model):
 
 if __name__ == "__main__":
     # Beispiel: Training und Test von PPO
-    ppo_model = train_ppo(total_timesteps=10_000_000)
-    ppo_model = PPO.load("./models/ppo_snake")
+    ppo_model = train_ppo(total_timesteps=10_00_000)
+    #ppo_model = PPO.load("./models/ppo_snake")
     test(ppo_model)
     test_avg_score(ppo_model) # Durchschnittlicher Score: 28.898 über 1000 Episoden
     
