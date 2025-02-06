@@ -1,7 +1,9 @@
+import torch.optim as optim
 from snake_env import SnakeEnv
-from stable_baselines3 import PPO, DQN
-from stable_baselines3.common.env_checker import check_env
+from stable_baselines3 import DQN, PPO
 from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.dqn.policies import DQNPolicy
 
 class ScoreLoggingCallback(BaseCallback):
     def __init__(self, verbose=0):
@@ -23,30 +25,76 @@ class ScoreLoggingCallback(BaseCallback):
             self.logger.record("rollout/avg_score", avg_score)
             self.episode_scores = []
 
-def train_ppo(total_timesteps=1_000_000):
+def train_dqn(total_timesteps=10_000_000):
     env = SnakeEnv()
     check_env(env, warn=True)
-    model = PPO("MlpPolicy", env, verbose=1, learning_rate=0.001,
-                tensorboard_log="./tensorboard/")
-    score_callback = ScoreLoggingCallback(verbose=1)
-    model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
-    model.save("ppo_snake")
-    return model
-
-def train_dqn(total_timesteps=1_000_000):
-    env = SnakeEnv()
-    check_env(env, warn=True)
-    model = DQN("MlpPolicy", env, verbose=1, learning_rate=0.001,
-                tensorboard_log="./tensorboard/")
+    model = DQN(
+        "MlpPolicy", 
+        env, 
+        verbose=1, 
+        learning_rate=0.001,
+        tensorboard_log="./tensorboard/",
+        exploration_fraction=0.2,  # 20% der total_timesteps für Exploration
+        exploration_final_eps=0.05  # Endwert für epsilon
+    )
     score_callback = ScoreLoggingCallback(verbose=1)
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
     model.save("dqn_snake")
     return model
 
-def test(model):
-    """Testet das trainierte Modell"""
+def train_ppo(total_timesteps=10_000_000):
     env = SnakeEnv()
-    obs, _ = env.reset()  # Bei neueren Gym-Versionen: reset() liefert (obs, info)
+    check_env(env, warn=True)
+    model = PPO(
+        "MlpPolicy",
+        env,
+        verbose=1,
+        learning_rate=0.0003,   # Geringere Lernrate für stabileres Training
+        n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden
+        batch_size=64,          # Mini-Batch-Größe
+        n_epochs=10,            # Mehrfache Updates pro Rollout
+        gamma=0.99,             # Diskontierungsfaktor
+        gae_lambda=0.95,        # Vorteilsschätzung
+        clip_range=0.2,         # Clipping der Policy-Updates
+        ent_coef=0.01,          # Entropie-Koeffizient zur Förderung der Exploration
+        vf_coef=0.5,            # Gewichtung der Wertfunktion
+        max_grad_norm=0.5,      # Gradient Clipping
+        tensorboard_log="./tensorboard/"
+    )
+    score_callback = ScoreLoggingCallback(verbose=1)
+    model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
+    model.save("ppo_snake")
+    return model
+
+def test_avg_score(model, num_episodes=1000):
+    ''' Testet das trainierte Modell und gibt den durchschnittlichen Score zurück '''
+    env = SnakeEnv()
+    model = model
+    total_scores = 0
+
+    for _ in range(num_episodes):
+        obs, _ = env.reset()
+        done = False
+        total_reward = 0
+
+        while not done:
+            action, _states = model.predict(obs)
+            obs, reward, terminated, truncated, info = env.step(action)
+            done = terminated or truncated
+            total_reward += reward
+
+        total_scores += env.score
+
+    avg_score = total_scores / num_episodes
+    print("Durchschnittlicher Score:", avg_score, "über", num_episodes, "Episoden")
+    return avg_score
+
+
+def test(model):
+    ''' Testet das trainierte Modell '''
+    env = SnakeEnv()
+    model = model
+    obs, _ = env.reset()
     done = False
     total_reward = 0
 
@@ -56,15 +104,18 @@ def test(model):
         done = terminated or truncated
         total_reward += reward
         env.render()
-        print("Reward:", reward, "Score:", getattr(env, "score", "unbekannt"))
-        
-    print("Episode beendet. Total Reward:", total_reward)
+        print("Reward:", reward, "Total Score:", env.score)
+
+    print("Episode beendet. Total Reward:", total_reward, ". Total Score:", env.score)
 
 if __name__ == "__main__":
     # Beispiel: Training und Test von DQN
-    dqn_model = train_dqn(total_timesteps=100_000)
-    test(dqn_model)
+    dqn_model = train_dqn(total_timesteps=10_000_000)
+    #dqn_model = DQN.load("dqn_snake")
+    test_avg_score(dqn_model) # Durchschnittlicher Score: 15.335 über 1000 Episoden
     
     # Beispiel: Training und Test von PPO
-    ppo_model = train_ppo(total_timesteps=100_000)
-    test(ppo_model)
+    ppo_model = train_ppo(total_timesteps=10_000_000)
+    #ppo_model = PPO.load("ppo_snake")
+    test_avg_score(ppo_model) # Durchschnittlicher Score: 28.898 über 1000 Episoden
+    

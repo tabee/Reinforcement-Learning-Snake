@@ -1,7 +1,5 @@
 # reinforcement learning snake game
 tensorboard/
-ppo_snake.zip   
-dqn_snake.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -175,5 +173,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-ppo_snake.zip
-ppo_snake.zip
