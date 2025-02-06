@@ -66,6 +66,30 @@ def train_ppo(total_timesteps=10_000_000):
     model.save("ppo_snake")
     return model
 
+def test_avg_score(model, num_episodes=1000):
+    ''' Testet das trainierte Modell und gibt den durchschnittlichen Score zurück '''
+    env = SnakeEnv()
+    model = model
+    total_scores = 0
+
+    for _ in range(num_episodes):
+        obs, _ = env.reset()
+        done = False
+        total_reward = 0
+
+        while not done:
+            action, _states = model.predict(obs)
+            obs, reward, terminated, truncated, info = env.step(action)
+            done = terminated or truncated
+            total_reward += reward
+
+        total_scores += env.score
+
+    avg_score = total_scores / num_episodes
+    print("Durchschnittlicher Score:", avg_score, "über", num_episodes, "Episoden")
+    return avg_score
+
+
 def test(model):
     ''' Testet das trainierte Modell '''
     env = SnakeEnv()
@@ -82,13 +106,16 @@ def test(model):
         env.render()
         print("Reward:", reward, "Total Score:", env.score)
 
-    print("Episode beendet. Total Reward:", total_reward)
+    print("Episode beendet. Total Reward:", total_reward, ". Total Score:", env.score)
 
 if __name__ == "__main__":
     # Beispiel: Training und Test von DQN
     dqn_model = train_dqn(total_timesteps=10_000_000)
-    test(dqn_model)
+    #dqn_model = DQN.load("dqn_snake")
+    test_avg_score(dqn_model) # Durchschnittlicher Score: 15.335 über 1000 Episoden
     
     # Beispiel: Training und Test von PPO
     ppo_model = train_ppo(total_timesteps=10_000_000)
-    test(ppo_model)
+    #ppo_model = PPO.load("ppo_snake")
+    test_avg_score(ppo_model) # Durchschnittlicher Score: 28.898 über 1000 Episoden
+    
