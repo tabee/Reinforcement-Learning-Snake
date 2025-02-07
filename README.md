@@ -1,6 +1,6 @@
 # Reinforcement-Learning-Snake
 
-Dieses Projekt implementiert eine Snake-Umgebung gemäss dem OpenAI Gym Standard und trainiert einen Reinforcement Learning Agenten (DQN) mit stable-baselines3.
+Dieses Projekt implementiert eine Snake-Umgebung gemäss dem OpenAI Gym Standard und trainiert einen Reinforcement Learning Agenten (PPO) mit stable-baselines3.
 
 ## Projektübersicht
 
@@ -11,16 +11,27 @@ Dieses Projekt besteht aus einer Snake-Umgebung, die mit Gymnasium erstellt wurd
 ## Verzeichnisstruktur
 
 ```bash
-__pycache__/
+assets/
+    screenshot.png
+models/
+    ppo_snake.zip
+src/
+    templates/
+        index.html
+    static/
+        apple_alt_64.png
+        snake_green_blob_64.png
+        snake_green_head_64.png
+    app.py
+    snake_env.py
+    train.py
 .gitignore
-app.py
 LICENSE
 README.md
 requirements.txt
-snake_env.py
-templates/
-    index.html
-train.py
+
+
+
 ```
 
 - `app.py`: Startet eine Flask-Webanwendung zur Visualisierung des Snake-Spiels.
@@ -37,8 +48,8 @@ Optional: Erstelle und starte venv
 
 ```bash
 sudo apt install python3.12-venv
-python3 -m venv snake
-source snake/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 ```
 
 Installiere requirements
@@ -47,7 +58,7 @@ Installiere requirements
 pip install -r requirements.txt
 ```
 
-## Start Training
+## Training
 
 Optional: Starte tensorboard (optional):
 
@@ -55,7 +66,7 @@ Optional: Starte tensorboard (optional):
 tensorboard --logdir=./tensorboard/
 ```
 
-Starte das Training des DQN-Agenten mit:
+Starte das Training des PPO-Agenten mit:
 
 ```bash
 python src/train.py
@@ -78,7 +89,7 @@ python src/app.py
 ## Fehlerbehebung
 
 - Stelle sicher, dass alle Abhängigkeiten korrekt installiert sind.
-- Überprüfe, ob die Datei `dqn_snake.zip` im Verzeichnis vorhanden ist, bevor du die Demo startest.
+- Überprüfe, ob die Datei `ppo_snake.zip` im Verzeichnis vorhanden ist, bevor du die Demo startest.
 - Bei Problemen mit Flask oder SocketIO, überprüfe die Versionen und Kompatibilität der Pakete in `requirements.txt`.
 
 ## Lizenz
