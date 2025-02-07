@@ -65,7 +65,7 @@ class SnakeEnv(gym.Env):
 
         # Prüfe auf Kollision mit eigenem Körper
         if new_head in self.snake:
-            reward = -1.1   # Reward für Kollision mit eigenem Körper
+            reward = -1.2   # Reward für Kollision mit eigenem Körper
             terminated = True
             truncated = False
             return self._get_observation(), reward, terminated, truncated, {}
