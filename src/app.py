@@ -10,6 +10,17 @@ socketio = SocketIO(app)
 # Erstelle die Umgebung
 env = SnakeEnv()
 
+def _direction_to_text(direction):
+    if direction == (0, -1):
+        return "up"
+    elif direction == (1, 0):
+        return "right"
+    elif direction == (0, 1):
+        return "down"
+    elif direction == (-1, 0):
+        return "left"
+    return "unknown"
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -27,7 +38,8 @@ def start_test():
         grid = env.get_grid()
         socketio.emit('state_update', {
             'state': grid.tolist(),
-            'score': env.score
+            'score': env.score,
+            'direction': _direction_to_text(env.direction),
         })
         time.sleep(0.1)
     socketio.emit('episode_end', {'score': env.score})
