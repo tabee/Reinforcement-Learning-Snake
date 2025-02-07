@@ -138,10 +138,10 @@ class SnakeEnv(gym.Env):
         return obs_vector
 
     def get_grid(self):
-        """Gibt das Gitter (2D-Array) für Visualisierungszwecke zurück (0 = leer, 1 = Schlange, 2 = Essen)."""
+        """Gibt das Gitter (2D-Array) für Visualisierungszwecke zurück: 0 = leer, 1 = Schlange, 2 = Essen, 3 = Schlangenkopf."""
         grid = np.zeros((self.rows, self.cols), dtype=np.int32)
-        for (x, y) in self.snake:
-            grid[y, x] = 1
+        for i, (x, y) in enumerate(self.snake):
+            grid[y, x] = 3 if i == 0 else 1
         grid[self.food[1], self.food[0]] = 2
         return grid
 
@@ -157,6 +157,8 @@ class SnakeEnv(gym.Env):
                     render_str += "S "
                 elif cell == 2:
                     render_str += "F "
+                elif cell == 3:
+                    render_str += "H "
             render_str += "\n"
         print(render_str)
 

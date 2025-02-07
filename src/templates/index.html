@@ -29,7 +29,11 @@
 
         // Laden des Bildes
         const foodImage = new Image();
+        const snakeBlob = new Image();
+        const snakeHead = new Image();
         foodImage.src = "{{ url_for('static', filename='/sprites/apple_alt_64.png') }}";
+        snakeBlob.src = "{{ url_for('static', filename='/sprites/snake_green_blob_64.png') }}";
+        snakeHead.src = "{{ url_for('static', filename='/sprites/snake_green_head_64.png') }}";
 
         // Event-Listener für den Startbutton
         startButton.addEventListener("click", () => {
@@ -45,10 +49,14 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let y = 0; y < state.length; y++) {
                 for (let x = 0; x < state[0].length; x++) {
-                    if (state[y][x] === 1) {
-                        ctx.fillStyle = "lime";  // Schlangenkörper
-                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    if (state[y][x] === 3) {
+                        // Zeichne den Snake-Head
+                        ctx.drawImage(snakeHead, x * cellSize, y * cellSize, cellSize, cellSize);
+                    } else if (state[y][x] === 1) {
+                        // Zeichne den Snake-Body
+                        ctx.drawImage(snakeBlob, x * cellSize, y * cellSize, cellSize, cellSize);
                     } else if (state[y][x] === 2) {
+                        // Zeichne das Futter
                         ctx.drawImage(foodImage, x * cellSize, y * cellSize, cellSize, cellSize);
                     }
                 }
