@@ -25,31 +25,34 @@ class ScoreLoggingCallback(BaseCallback):
             self.logger.record("./rollout/avg_score", avg_score)
             self.episode_scores = []
 
-def train_ppo(total_timesteps):
+def train_ppo(total_timesteps, model=None):
     env = SnakeEnv()
     check_env(env, warn=True)
-    model = PPO(
-        "MlpPolicy",
-        env,
-        verbose=1,
-        learning_rate=0.003,    # Geringere Lernrate für stabileres Training
-        n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden
-        batch_size=64,          # Mini-Batch-Größe
-        n_epochs=10,            # Mehrfache Updates pro Rollout
-        gamma=0.99,             # Diskontierungsfaktor
-        gae_lambda=0.95,        # Vorteilsschätzung
-        clip_range=0.2,         # Clipping der Policy-Updates
-        ent_coef=0.01,          # Entropie-Koeffizient zur Förderung der Exploration
-        vf_coef=0.5,            # Gewichtung der Wertfunktion
-        max_grad_norm=0.5,      # Gradient Clipping
-        tensorboard_log="./tensorboard/"
-    )
+    if model is None:
+        model = PPO(
+            "MlpPolicy",
+            env,
+            verbose=1,
+            learning_rate=0.002,    # Geringere Lernrate für stabileres Training
+            n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden
+            batch_size=64,          # Mini-Batch-Größe
+            n_epochs=10,            # Mehrfache Updates pro Rollout
+            gamma=0.99,             # Diskontierungsfaktor
+            gae_lambda=0.95,        # Vorteilsschätzung
+            clip_range=0.2,         # Clipping der Policy-Updates
+            ent_coef=0.01,          # Entropie-Koeffizient zur Förderung der Exploration
+            vf_coef=0.5,            # Gewichtung der Wertfunktion
+            max_grad_norm=0.5,      # Gradient Clipping
+            tensorboard_log="./tensorboard/"
+        )
+    else:
+        model.set_env(env)
     score_callback = ScoreLoggingCallback(verbose=1)
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
     model.save("./models/ppo_snake")
     return model
 
-def test_avg_score(model, num_episodes=100):
+def test_avg_score(model, num_episodes=1000):
     ''' Testet das trainierte Modell und gibt den durchschnittlichen Score zurück '''
     env = SnakeEnv()
     model = model
@@ -92,9 +95,12 @@ def test(model):
     print("Episode beendet. Total Reward:", total_reward, ". Total Score:", env.score)
 
 if __name__ == "__main__":
-    # Beispiel: Training und Test von PPO
-    ppo_model = train_ppo(total_timesteps=10_00_000)
-    #ppo_model = PPO.load("./models/ppo_snake")
+    ppo_model = PPO.load("./models/ppo_snake")
+    ppo_model = train_ppo(total_timesteps=10_000_000, model=ppo_model)
+    ppo_model = PPO.load("./models/ppo_snake")
     test(ppo_model)
-    test_avg_score(ppo_model) # Durchschnittlicher Score: 28.898 über 1000 Episoden
+        
+    # 15:54 Durchschnittlicher Score: 25.913 über 1000 Episoden
+    # 15:56 Durchschnittlicher Score: 25.501 über 1000 Episoden
+    test_avg_score(ppo_model) 
     
