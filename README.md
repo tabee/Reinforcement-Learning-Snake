@@ -4,7 +4,7 @@ Dieses Projekt implementiert eine Snake-Umgebung gemäss dem OpenAI Gym Standard
 
 ## Projektübersicht
 
-![Bildschirmfoto vom 2025-02-04 00-35-31](https://raw.githubusercontent.com/tabee/Reinforcement-Learning-Snake/refs/heads/main/Bildschirmfoto%20vom%202025-02-04%2000-35-31.png)
+![Screenshot Snake Game 2025-02-04](./assets/screenshot.png)
 
 Dieses Projekt besteht aus einer Snake-Umgebung, die mit Gymnasium erstellt wurde, und einem DQN-Agenten, der mit stable-baselines3 trainiert wird. Die Umgebung und der Agent werden verwendet, um das Verhalten der Schlange zu steuern und zu optimieren.
 
@@ -58,7 +58,7 @@ tensorboard --logdir=./tensorboard/
 Starte das Training des DQN-Agenten mit:
 
 ```bash
-python train.py
+python src/train.py
 ```
 
 ## Start Demo
@@ -66,7 +66,7 @@ python train.py
 Starte die Flask-Webanwendung zur Visualisierung des Spiels mit:
 
 ```bash
-python app.py
+python src/app.py
 ```
 
 ## Nutzung
