@@ -102,5 +102,7 @@ if __name__ == "__main__":
         
     # 15:54 Durchschnittlicher Score: 25.913 über 1000 Episoden
     # 15:56 Durchschnittlicher Score: 25.501 über 1000 Episoden
+    # 18:08 Durchschnittlicher Score: 21.586 über 1000 Episoden
+    # 18:10 Durchschnittlicher Score: 24.238 über 1000 Episoden
     test_avg_score(ppo_model) 
     

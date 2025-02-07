@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Snake RL Visualisierung</title>
     <style>
-        canvas { background: #000; display: block; margin: 20px auto; }
+        canvas { background: #9DC183; display: block; margin: 20px auto; }
         #score { text-align: center; font-size: 1.5em; color: #333; }
         #startButton { display: block; margin: 20px auto; }
         #direction { text-align: center; font-size: 1.5em; color: #333; }
@@ -27,6 +27,14 @@
         const modelSelect = document.getElementById("modelSelect");
         const cellSize = 20;  // Muss zum grid_size der Umgebung passen
 
+        // Laden des Bildes
+        const foodImage = new Image();
+        const snakeBlob = new Image();
+        const snakeHead = new Image();
+        foodImage.src = "{{ url_for('static', filename='/sprites/apple_alt_64.png') }}";
+        snakeBlob.src = "{{ url_for('static', filename='/sprites/snake_green_blob_64.png') }}";
+        snakeHead.src = "{{ url_for('static', filename='/sprites/snake_green_head_64.png') }}";
+
         // Event-Listener für den Startbutton
         startButton.addEventListener("click", () => {
             socket.emit('start_test');  // Starte den Test
@@ -41,12 +49,15 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let y = 0; y < state.length; y++) {
                 for (let x = 0; x < state[0].length; x++) {
-                    if (state[y][x] === 1) {
-                        ctx.fillStyle = "lime";  // Schlangenkörper
-                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    if (state[y][x] === 3) {
+                        // Zeichne den Snake-Head
+                        ctx.drawImage(snakeHead, x * cellSize, y * cellSize, cellSize, cellSize);
+                    } else if (state[y][x] === 1) {
+                        // Zeichne den Snake-Body
+                        ctx.drawImage(snakeBlob, x * cellSize, y * cellSize, cellSize, cellSize);
                     } else if (state[y][x] === 2) {
-                        ctx.fillStyle = "red";  // Essen
-                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                        // Zeichne das Futter
+                        ctx.drawImage(foodImage, x * cellSize, y * cellSize, cellSize, cellSize);
                     }
                 }
             }
