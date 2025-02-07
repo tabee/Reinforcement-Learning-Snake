@@ -27,6 +27,10 @@
         const modelSelect = document.getElementById("modelSelect");
         const cellSize = 20;  // Muss zum grid_size der Umgebung passen
 
+        // Laden des Bildes
+        const foodImage = new Image();
+        foodImage.src = "{{ url_for('static', filename='/sprites/apple_alt_64.png') }}";
+
         // Event-Listener für den Startbutton
         startButton.addEventListener("click", () => {
             socket.emit('start_test');  // Starte den Test
@@ -45,8 +49,7 @@
                         ctx.fillStyle = "lime";  // Schlangenkörper
                         ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
                     } else if (state[y][x] === 2) {
-                        ctx.fillStyle = "red";  // Essen
-                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                        ctx.drawImage(foodImage, x * cellSize, y * cellSize, cellSize, cellSize);
                     }
                 }
             }
