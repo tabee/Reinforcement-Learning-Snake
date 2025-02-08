@@ -31,9 +31,11 @@
         const foodImage = new Image();
         const snakeBlob = new Image();
         const snakeHead = new Image();
+        const snakeHeadOver = new Image();
         foodImage.src = "{{ url_for('static', filename='/sprites/apple_alt_64.png') }}";
         snakeBlob.src = "{{ url_for('static', filename='/sprites/snake_green_blob_64.png') }}";
         snakeHead.src = "{{ url_for('static', filename='/sprites/snake_green_head_64.png') }}";
+        snakeHeadOver.src = "{{ url_for('static', filename='/sprites/snake_green_xx.png') }}";
 
         // Event-Listener für den Startbutton
         startButton.addEventListener("click", () => {
@@ -58,6 +60,9 @@
                     } else if (state[y][x] === 2) {
                         // Zeichne das Futter
                         ctx.drawImage(foodImage, x * cellSize, y * cellSize, cellSize, cellSize);
+                    } else if (state[y][x] === 4) {
+                        // Zeichne den Snake-Head (Game Over)
+                        ctx.drawImage(snakeHeadOver, x * cellSize, y * cellSize, cellSize, cellSize);
                     }
                 }
             }
