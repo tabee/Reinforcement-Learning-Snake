@@ -5,7 +5,7 @@ from stable_baselines3 import PPO
 # load the environment
 env = SnakeEnv()
 
-def calculate_average_score(model, num_episodes=1000):
+def calculate_average_score(model, num_episodes=100):
     """
     Test the model and return the average score over a specified number of episodes.
 
@@ -69,6 +69,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     if args.load:
+        print("Loading model from:", args.load)
         ppo_model = PPO.load("./models/" + args.load)
         execute_test_episode(ppo_model)
         calculate_average_score(ppo_model)
