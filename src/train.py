@@ -1,4 +1,5 @@
 import argparse
+import toml
 from datetime import datetime
 import torch.optim as optim
 from snake_env import SnakeEnv
@@ -53,6 +54,12 @@ class ScoreLoggingCallback(BaseCallback):
             self.logger.record("./rollout/avg_score", avg_score)
             self.episode_scores = []
 
+# TOML-Konfiguration laden
+with open("./src/ppo_configs.toml", "r") as f:
+    data = toml.load(f)
+config = data["configs"][0]
+print("Using configuration:", config)
+
 env = SnakeEnv() # Setups the environment
 env_monitor = Monitor(env) # Monitor the environment
 
@@ -95,26 +102,12 @@ def train_ppo(total_timesteps, model=None):
         
     check_env(env, warn=True)
     if model is None:
-        model = PPO(
-            "MlpPolicy",
-            env,
-            verbose=0,
-            learning_rate=0.002,    # Geringere Lernrate für stabileres Training
-            n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden
-            batch_size=64,          # Mini-Batch-Größe
-            n_epochs=10,            # Mehrfache Updates pro Rollout
-            gamma=0.99,             # Diskontierungsfaktor
-            gae_lambda=0.95,        # Vorteilsschätzung
-            clip_range=0.2,         # Clipping der Policy-Updates
-            ent_coef=0.01,          # Entropie-Koeffizient zur Förderung der Exploration
-            vf_coef=0.5,            # Gewichtung der Wertfunktion
-            max_grad_norm=0.5,      # Gradient Clipping
-            tensorboard_log="./tensorboard/"
-        )
+        model = model = PPO("MlpPolicy", env, verbose=0, tensorboard_log="./tensorboard/", **config)
     else:
         model.set_env(env)
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=callbacks)
-    model.save("./models/ppo_snake"+str(datetime.now().strftime("%Y%m%d-%H%M%S")))
+    #model.save("./models/ppo_snake"+str(datetime.now().strftime("%Y%m%d-%H%M%S")))
+    model.save("./models/ppo_snake")
     return model
 
 if __name__ == "__main__":

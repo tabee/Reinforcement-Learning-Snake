@@ -69,7 +69,7 @@ class SnakeEnv(gym.Env):
         else:
             return self.direction # no change
 
-    def u_turn(self, new_direction):
+    def _is_uturn(self, new_direction):
         """
         Check if the snake is making a U-turn.
 
@@ -80,7 +80,7 @@ class SnakeEnv(gym.Env):
             bool: True if the snake is making a U-turn, False otherwise.
         """
         return (new_direction[0] == -self.direction[0] and new_direction[1] == -self.direction[1])
-  
+
     def _hit_wall(self, head):
         """
         Check if the snake's head has hit the wall.
@@ -93,7 +93,7 @@ class SnakeEnv(gym.Env):
         """
         return (head[0] < 0 or head[0] >= self.cols or
                 head[1] < 0 or head[1] >= self.rows)
-   
+
     def _hit_body(self, head):
         """
         Check if the snake's head has hit its body.
@@ -121,7 +121,7 @@ class SnakeEnv(gym.Env):
     def step(self, action):
         # Bestimme neue Richtung und vermeide U-Turns
         new_direction = self._new_direction(action)
-        if len(self.snake) > 1 and self.u_turn(new_direction):
+        if len(self.snake) > 1 and self._is_uturn(new_direction):
             new_direction = self.direction
         else:
             self.direction = new_direction
@@ -135,14 +135,12 @@ class SnakeEnv(gym.Env):
             self.done = True
             terminated = True
             truncated = False
-            print("Hit wall")
             return self._get_observation(), reward, terminated, truncated, {}
         if self._hit_body(new_head):
             reward = self.penalty_for_hit_body
             self.done = True
             terminated = True
             truncated = False
-            print("Hit body")
             return self._get_observation(), reward, terminated, truncated, {}
 
         # Kein Kollisionsfehler: Neuer Kopf einfügen
@@ -159,9 +157,6 @@ class SnakeEnv(gym.Env):
         terminated = False
         truncated = False
         return self._get_observation(), reward, terminated, truncated, {}
-
-
-
 
     def _get_observation(self):
         """
@@ -221,7 +216,6 @@ class SnakeEnv(gym.Env):
             print(f"Food index out of bounds: x={self.food[0]}, y={self.food[1]}")
         return grid
 
-
     def render(self, mode='human'):
         grid = self.get_grid()
         render_str = ""
@@ -239,7 +233,6 @@ class SnakeEnv(gym.Env):
                     render_str += "X "  # Kopf als 'X', wenn tot
             render_str += "\n"
         print(render_str)
-
 
     def close(self):
         pass
