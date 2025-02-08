@@ -1,7 +1,8 @@
+import argparse
 import torch.optim as optim
 from snake_env import SnakeEnv
 from stable_baselines3 import DQN, PPO
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import CallbackList, BaseCallback, CheckpointCallback
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.dqn.policies import DQNPolicy
 
@@ -25,6 +26,17 @@ class ScoreLoggingCallback(BaseCallback):
             self.logger.record("./rollout/avg_score", avg_score)
             self.episode_scores = []
 
+# Callback zum Speichern des Modells
+checkpoint_callback = CheckpointCallback(
+    save_freq=100_000,  # all 50k timesteps
+    save_path="./models/checkpoints/",
+    name_prefix="ppo_snake"
+)
+score_callback = ScoreLoggingCallback(verbose=1)
+
+# Erstellen Sie eine Liste von Callbacks
+callbacks = CallbackList([score_callback, checkpoint_callback])
+
 def train_ppo(total_timesteps, model=None):
     env = SnakeEnv()
     check_env(env, warn=True)
@@ -32,7 +44,7 @@ def train_ppo(total_timesteps, model=None):
         model = PPO(
             "MlpPolicy",
             env,
-            verbose=1,
+            verbose=0,
             learning_rate=0.002,    # Geringere Lernrate für stabileres Training
             n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden
             batch_size=64,          # Mini-Batch-Größe
@@ -47,12 +59,11 @@ def train_ppo(total_timesteps, model=None):
         )
     else:
         model.set_env(env)
-    score_callback = ScoreLoggingCallback(verbose=1)
-    model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=score_callback)
+    model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=callbacks)
     model.save("./models/ppo_snake")
     return model
 
-def test_avg_score(model, num_episodes=1000):
+def test_avg_score(model, num_episodes=100):
     ''' Testet das trainierte Modell und gibt den durchschnittlichen Score zurück '''
     env = SnakeEnv()
     model = model
@@ -72,7 +83,7 @@ def test_avg_score(model, num_episodes=1000):
         total_scores += env.score
 
     avg_score = total_scores / num_episodes
-    print("Durchschnittlicher Score:", avg_score, "über", num_episodes, "Episoden")
+    print("Durchschnittlicher Score:", avg_score, "über", num_episodes, "Episoden.", "Model", model.policy_kwargs)
     return avg_score
 
 
@@ -95,14 +106,24 @@ def test(model):
     print("Episode beendet. Total Reward:", total_reward, ". Total Score:", env.score)
 
 if __name__ == "__main__":
-    ppo_model = PPO.load("./models/ppo_snake")
-    ppo_model = train_ppo(total_timesteps=10_000_000, model=ppo_model)
-    ppo_model = PPO.load("./models/ppo_snake")
-    test(ppo_model)
-        
-    # 15:54 Durchschnittlicher Score: 25.913 über 1000 Episoden
-    # 15:56 Durchschnittlicher Score: 25.501 über 1000 Episoden
-    # 18:08 Durchschnittlicher Score: 21.586 über 1000 Episoden
-    # 18:10 Durchschnittlicher Score: 24.238 über 1000 Episoden
-    test_avg_score(ppo_model) 
+    parser = argparse.ArgumentParser(description='Train and test PPO model for Snake game.')
+    parser.add_argument('--load', type=str, default=None, help='Pfad zum Modell, das geladen werden soll')
+    parser.add_argument('--timesteps', type=int, default=None, help='Anzahl der Timesteps für das Training')
+    parser.add_argument('--test', type=bool, default=None, help='Ob die Testfunktion ausgeführt werden soll')
     
+    args = parser.parse_args()
+    
+    if args.load:
+        ppo_model = PPO.load("./models/" + args.load)
+        
+    if args.timesteps:
+        ppo_model = train_ppo(total_timesteps=args.timesteps)    
+
+    if args.test == True:
+        #test(ppo_model)
+        test_avg_score(ppo_model)
+        
+    if args.load == None and args.timesteps == None and args.test == None:
+        print("Keine Argumente gefunden.")
+        ppo_model = train_ppo(total_timesteps=1_000_000)
+        test_avg_score(ppo_model)
