@@ -27,6 +27,7 @@ def index():
 
 @socketio.on('start_test')
 def start_test():
+    #model = PPO.load("./models/checkpoints/ppo_snake_100000_steps")
     model = PPO.load("./models/ppo_snake")
     obs, _ = env.reset()  # Hier wird nur die Beobachtung (Feature-Vektor) entpackt
     done = False
