@@ -26,33 +26,24 @@ class ScoreLoggingCallback(BaseCallback):
             collected episode scores and logs it using the internal logger. Resets
             the episode_scores list afterwards.
     """
-    def __init__(self, verbose=0):
+    def __init__(self, verbose=1):
         super().__init__(verbose)
         self.episode_scores = []  # List to store the scores of each episode
 
     def _on_step(self) -> bool:
-        """
-        Callback function called at each step of the environment.
-
-        This function is used to collect episode scores from the `infos` dictionary
-        stored in the local buffer of VecEnvs. If the `infos` dictionary contains
-        a "score" key, the corresponding value is appended to the `episode_scores` list.
-
-        Returns:
-            bool: Always returns True to indicate the callback should continue.
-        """
         infos = self.locals.get("infos", [])
         for info in infos:
             if "score" in info:
                 self.episode_scores.append(info["score"])
         return True
 
+
     def _on_rollout_end(self) -> None:
         if self.episode_scores:
             avg_score = sum(self.episode_scores) / len(self.episode_scores)
-            # TensorBoard-Log über den internen Logger
-            self.logger.record("./rollout/avg_score", avg_score)
+            self.logger.record("rollout/avg_score", avg_score)
             self.episode_scores = []
+
 
 # TOML-Konfiguration laden
 with open("./src/ppo_configs.toml", "r") as f:
@@ -102,11 +93,13 @@ def train_ppo(total_timesteps, model=None):
         
     check_env(env, warn=True)
     if model is None:
-        model = model = PPO("MlpPolicy", env, verbose=0, tensorboard_log="./tensorboard/", **config)
+        model = PPO("MlpPolicy", env, verbose=1, tensorboard_log="./tensorboard/", **config)
     else:
         model.set_env(env)
+        model.verbose = 1
+        model.tensorboard_log = "./tensorboard/"
+    
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=callbacks)
-    #model.save("./models/ppo_snake"+str(datetime.now().strftime("%Y%m%d-%H%M%S")))
     model.save("./models/ppo_snake")
     return model
 

@@ -135,13 +135,13 @@ class SnakeEnv(gym.Env):
             self.done = True
             terminated = True
             truncated = False
-            return self._get_observation(), reward, terminated, truncated, {}
+            return self._get_observation(), reward, terminated, truncated, {"score": self.score}
         if self._hit_body(new_head):
             reward = self.penalty_for_hit_body
             self.done = True
             terminated = True
             truncated = False
-            return self._get_observation(), reward, terminated, truncated, {}
+            return self._get_observation(), reward, terminated, truncated, {"score": self.score}
 
         # Kein Kollisionsfehler: Neuer Kopf einfügen
         self.snake.insert(0, new_head)
@@ -156,7 +156,7 @@ class SnakeEnv(gym.Env):
 
         terminated = False
         truncated = False
-        return self._get_observation(), reward, terminated, truncated, {}
+        return self._get_observation(), reward, terminated, truncated, {"score": self.score}
 
     def _get_observation(self):
         """
