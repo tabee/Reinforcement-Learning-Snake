@@ -27,7 +27,7 @@ def index():
 
 @socketio.on('start_test')
 def start_test(data):
-    model_name = data.get('model', 'ppo_snake_config3')  # Standardmodell, falls nichts übergeben wird
+    model_name = data.get('model', 'ppo_snake_config0')  # Standardmodell, falls nichts übergeben wird
     model_path = f"./models/{model_name}"
     
     try:
