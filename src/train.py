@@ -44,12 +44,32 @@ class ScoreLoggingCallback(BaseCallback):
             self.logger.record("rollout/avg_score", avg_score)
             self.episode_scores = []
 
-
-# TOML-Konfiguration laden
+def clean_toml_config(config):
+    """
+    Entfernt Schlüssel aus der Konfiguration, die nicht als Parameter für PPO zulässig sind.
+    """
+    excluded_keys = ["name"]
+    return {k: v for k, v in config.items() if k not in excluded_keys}
+def get_config_by_name(config_name=None):
+    """
+    Wählt eine Konfiguration basierend auf dem Namen aus der TOML-Datei aus.
+    Falls kein Name angegeben wird, wird die erste Konfiguration verwendet.
+    """
+    if config_name:
+        for cfg in data["configs"]:
+            if cfg.get("name") == config_name:
+                return cfg
+        raise ValueError(f"Konfiguration '{config_name}' nicht gefunden!")
+    
+    return data["configs"][0]  # Fallback auf erste Konfiguration
+# TOML-Konfiguration lesen
 with open("./src/ppo_configs.toml", "r") as f:
     data = toml.load(f)
-config = data["configs"][0]
-print("Using configuration:", config)
+# TOML-Konfiguration laden
+config_name = "config2"  # Hier den gewünschten Namen setzen oder als Argument übergeben
+config = get_config_by_name(config_name)
+print("\nUsing configuration:", config)
+
 
 env = SnakeEnv() # Setups the environment
 env_monitor = Monitor(env) # Monitor the environment
@@ -57,14 +77,14 @@ env_monitor = Monitor(env) # Monitor the environment
 # Callback to save checkpoints during training
 checkpoint_callback = CheckpointCallback(
     save_freq=5000,  # save a checkpoint every 5k steps
-    save_path="./models/checkpoints/",
+    save_path="./models/checkpoints_"+config.get("name")+"/",
     name_prefix="ppo_snake",
     verbose=1,
 )
 # Callback to evaluate the model during training
 eval_callback = EvalCallback(
     env_monitor,
-    best_model_save_path="./models/best_model/",
+    best_model_save_path="./models/best_model_"+config.get("name")+"/",
     log_path="./logs/",
     eval_freq=10_000,  # Evaluate the model every 10k steps
     n_eval_episodes=3,  # Evaluate the model on 3 episodes
@@ -93,14 +113,15 @@ def train_ppo(total_timesteps, model=None):
         
     check_env(env, warn=True)
     if model is None:
-        model = PPO("MlpPolicy", env, verbose=1, tensorboard_log="./tensorboard/", **config)
+        ppo_config = clean_toml_config(config)
+        model = PPO("MlpPolicy", env, verbose=1, tensorboard_log="./tensorboard/", **ppo_config)
     else:
         model.set_env(env)
         model.verbose = 1
         model.tensorboard_log = "./tensorboard/"
     
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=callbacks)
-    model.save("./models/ppo_snake")
+    model.save("./models/ppo_snake_"+config.get("name"))
     return model
 
 if __name__ == "__main__":

@@ -26,23 +26,31 @@ def index():
     return render_template('index.html')
 
 @socketio.on('start_test')
-def start_test():
-    #model = PPO.load("./models/checkpoints/ppo_snake_100000_steps")
-    model = PPO.load("./models/ppo_snake")
-    obs, _ = env.reset()  # Hier wird nur die Beobachtung (Feature-Vektor) entpackt
+def start_test(data):
+    model_name = data.get('model', 'ppo_snake_config3')  # Standardmodell, falls nichts übergeben wird
+    model_path = f"./models/{model_name}"
+    
+    try:
+        model = PPO.load(model_path)
+    except Exception as e:
+        emit('error', {'message': f'Fehler beim Laden des Modells: {str(e)}'})
+        return
+
+    obs, _ = env.reset()
     done = False
     while not done:
         action, _states = model.predict(obs)
         obs, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
-        # Für die Visualisierung: Hole das Gitter (2D-Array) statt des Feature-Vektors
         grid = env.get_grid()
+        
         socketio.emit('state_update', {
             'state': grid.tolist(),
             'score': env.score,
             'direction': _direction_to_text(env.direction),
         })
         time.sleep(0.1)
+
     socketio.emit('episode_end', {'score': env.score})
 
 if __name__ == '__main__':

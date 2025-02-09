@@ -1,5 +1,6 @@
 
 [[configs]]
+name = "config0"
 learning_rate = 0.002
 n_steps = 1024
 batch_size = 64
