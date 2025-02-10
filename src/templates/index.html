@@ -23,6 +23,8 @@
             <option value="best_model_config1/best_model">Best Model Config 1 (AVG 14.4)</option>
             <option value="best_model_config2/best_model">Best Model Config 2 (AVG 10.6)</option>
             <option value="best_model_config3/best_model">Best Model Config 3 (AVG 10.2)</option>
+            <option value="human">Human</option>
+
         </select>
     </div>
     <button id="startButton">Testlauf starten</button>
@@ -64,6 +66,20 @@
             const selectedModel = document.getElementById("modelSelect").value;
             socket.emit('start_test', { model: selectedModel });
             startButton.disabled = true;
+        });
+
+        // Event-Listener für die Tastatursteuerung
+        document.addEventListener("keydown", (event) => {
+            let direction = "";
+            switch(event.key) {
+                case "ArrowUp":    direction = "up";    break;
+                case "ArrowDown":  direction = "down";  break;
+                case "ArrowLeft":  direction = "left";  break;
+                case "ArrowRight": direction = "right"; break;
+            }
+            if (direction !== "") {
+                socket.emit('human_action', { direction: direction });
+            }
         });
         
 
