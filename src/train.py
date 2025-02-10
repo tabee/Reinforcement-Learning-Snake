@@ -1,4 +1,5 @@
 import argparse
+import toml
 from datetime import datetime
 import torch.optim as optim
 from snake_env import SnakeEnv
@@ -25,33 +26,50 @@ class ScoreLoggingCallback(BaseCallback):
             collected episode scores and logs it using the internal logger. Resets
             the episode_scores list afterwards.
     """
-    def __init__(self, verbose=0):
+    def __init__(self, verbose=1):
         super().__init__(verbose)
         self.episode_scores = []  # List to store the scores of each episode
 
     def _on_step(self) -> bool:
-        """
-        Callback function called at each step of the environment.
-
-        This function is used to collect episode scores from the `infos` dictionary
-        stored in the local buffer of VecEnvs. If the `infos` dictionary contains
-        a "score" key, the corresponding value is appended to the `episode_scores` list.
-
-        Returns:
-            bool: Always returns True to indicate the callback should continue.
-        """
         infos = self.locals.get("infos", [])
         for info in infos:
             if "score" in info:
                 self.episode_scores.append(info["score"])
         return True
 
+
     def _on_rollout_end(self) -> None:
         if self.episode_scores:
             avg_score = sum(self.episode_scores) / len(self.episode_scores)
-            # TensorBoard-Log über den internen Logger
-            self.logger.record("./rollout/avg_score", avg_score)
+            self.logger.record("rollout/avg_score", avg_score)
             self.episode_scores = []
+
+def clean_toml_config(config):
+    """
+    Entfernt Schlüssel aus der Konfiguration, die nicht als Parameter für PPO zulässig sind.
+    """
+    excluded_keys = ["name"]
+    return {k: v for k, v in config.items() if k not in excluded_keys}
+def get_config_by_name(config_name=None):
+    """
+    Wählt eine Konfiguration basierend auf dem Namen aus der TOML-Datei aus.
+    Falls kein Name angegeben wird, wird die erste Konfiguration verwendet.
+    """
+    if config_name:
+        for cfg in data["configs"]:
+            if cfg.get("name") == config_name:
+                return cfg
+        raise ValueError(f"Konfiguration '{config_name}' nicht gefunden!")
+    
+    return data["configs"][0]  # Fallback auf erste Konfiguration
+# TOML-Konfiguration lesen
+with open("./src/ppo_configs.toml", "r") as f:
+    data = toml.load(f)
+# TOML-Konfiguration laden
+config_name = "config2"  # Hier den gewünschten Namen setzen oder als Argument übergeben
+config = get_config_by_name(config_name)
+print("\nUsing configuration:", config)
+
 
 env = SnakeEnv() # Setups the environment
 env_monitor = Monitor(env) # Monitor the environment
@@ -59,14 +77,14 @@ env_monitor = Monitor(env) # Monitor the environment
 # Callback to save checkpoints during training
 checkpoint_callback = CheckpointCallback(
     save_freq=5000,  # save a checkpoint every 5k steps
-    save_path="./models/checkpoints/",
+    save_path="./models/checkpoints_"+config.get("name")+"/",
     name_prefix="ppo_snake",
     verbose=1,
 )
 # Callback to evaluate the model during training
 eval_callback = EvalCallback(
     env_monitor,
-    best_model_save_path="./models/best_model/",
+    best_model_save_path="./models/best_model_"+config.get("name")+"/",
     log_path="./logs/",
     eval_freq=10_000,  # Evaluate the model every 10k steps
     n_eval_episodes=3,  # Evaluate the model on 3 episodes
@@ -95,26 +113,21 @@ def train_ppo(total_timesteps, model=None):
         
     check_env(env, warn=True)
     if model is None:
-        model = PPO(
-            "MlpPolicy",
-            env,
-            verbose=0,
-            learning_rate=0.002,    # Geringere Lernrate für stabileres Training
-            n_steps=1024,           # Anzahl Schritte pro Update, passend für kurze Episoden
-            batch_size=64,          # Mini-Batch-Größe
-            n_epochs=10,            # Mehrfache Updates pro Rollout
-            gamma=0.99,             # Diskontierungsfaktor
-            gae_lambda=0.95,        # Vorteilsschätzung
-            clip_range=0.2,         # Clipping der Policy-Updates
-            ent_coef=0.01,          # Entropie-Koeffizient zur Förderung der Exploration
-            vf_coef=0.5,            # Gewichtung der Wertfunktion
-            max_grad_norm=0.5,      # Gradient Clipping
-            tensorboard_log="./tensorboard/"
-        )
+        ppo_config = clean_toml_config(config)
+        model = PPO("MlpPolicy", env, verbose=1, tensorboard_log="./tensorboard/", **ppo_config)
     else:
         model.set_env(env)
+        model.verbose = 1
+        model.tensorboard_log = "./tensorboard/"
+        print("model loaded")
+        # Setze die Lernrate des Optimizers
+        model.lr_schedule = lambda _: 0.0001
+        for param_group in model.policy.optimizer.param_groups:
+            param_group['lr'] = 0.0001
+        print("model config loaded")
+    
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=callbacks)
-    model.save("./models/ppo_snake"+str(datetime.now().strftime("%Y%m%d-%H%M%S")))
+    model.save("./models/ppo_snake_"+config.get("name"))
     return model
 
 if __name__ == "__main__":
@@ -125,10 +138,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     ppo_model = None
+    # Import if you want to load a model, load the model and retrain it
+    # there is a learning_rate for retraining the model in the code above
+    # if you want to change the config, change in the code above
+    # if you retrian the model, it will be saved in the same directory wit the name of the config
+    # src/train.py --load ppo_snake_config2_base --timesteps 10000 > lod the model with this name, 
+    # re-train it and will be saved as ppo_snake_config2 because of the config name!!!
+    # you see, here is a lot to d, but it is possible to do it :)
+    
     
     if args.load != None:
         print("lodaded model: ", args.load)
-        ppo_model = PPO.load("./models/" + args.load)
+        ppo_model = PPO.load("./models/" + args.load) # Load the model NOT THE CONFIG
         
     if args.timesteps:
         print("timesteps: ", args.timesteps)

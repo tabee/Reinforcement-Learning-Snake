@@ -12,14 +12,20 @@ class SnakeEnv(gym.Env):
         self.width = width
         self.height = height
         self.cols = width // grid_size
-        self.rows = height // grid_size
-
-        # Aktionen: 0 = oben, 1 = rechts, 2 = unten, 3 = links
-        self.action_space = spaces.Discrete(4)
-
+        self.rows = height // grid_size      
+        self.action_space = spaces.Discrete(4) # Aktionen: 0 = oben, 1 = rechts, 2 = unten, 3 = links
         # Beobachtungsraum: Wir nutzen einen 9-dimensionalen Feature-Vektor für das Training.
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(9,), dtype=np.float32)
+        #### reward and penalty
+        self.reward_for_food = 1.0
+        self.penalty_for_small_steps = -0.01
+        self.penalty_for_hit_wall = -1.0
+        self.penalty_for_hit_body = -2.0
+        ####      
         self.reset()
+
+    def eats_food(self):
+        return self.snake[0] == self.food
 
     def reset(self, **kwargs):
         """Setzt die Umgebung zurück und gibt (observation, info) zurück."""
@@ -37,64 +43,120 @@ class SnakeEnv(gym.Env):
             if self.food not in self.snake:
                 break
 
-    def step(self, action):
+    def _new_direction(self, action):
         """
-        Führt einen Schritt aus und gibt (observation, reward, terminated, truncated, info) zurück.
-        Terminierung (terminated) tritt bei einer Kollision auf.
-        """
-        # Bestimme neue Richtung anhand der Aktion:
-        if action == 0:
-            new_direction = (0, -1)  # oben
-        elif action == 1:
-            new_direction = (1, 0)   # rechts
-        elif action == 2:
-            new_direction = (0, 1)   # unten
-        elif action == 3:
-            new_direction = (-1, 0)  # links
-        else:
-            new_direction = self.direction
+        Determine the new direction of the snake based on the given action.
 
-        # Verhindere U-Turns (falls die Schlange länger als 1 Segment ist)
-        if len(self.snake) > 1 and (new_direction[0] == -self.direction[0] and new_direction[1] == -self.direction[1]):
+        Args:
+            action (int): The action to be taken, where:
+                          0 -> move up
+                          1 -> move right
+                          2 -> move down
+                          3 -> move left
+
+        Returns:
+            tuple: A tuple representing the new direction (dx, dy).
+                   If the action is not recognized, returns the current direction.
+        """
+        if action == 0:
+            return (0, -1) # move up
+        elif action == 1:
+            return (1, 0) # move right
+        elif action == 2:
+            return (0, 1) # move down
+        elif action == 3:
+            return (-1, 0) # move left
+        else:
+            return self.direction # no change
+
+    def _is_uturn(self, new_direction):
+        """
+        Check if the snake is making a U-turn.
+
+        Args:
+            new_direction (tuple): The new direction of the snake.
+
+        Returns:
+            bool: True if the snake is making a U-turn, False otherwise.
+        """
+        return (new_direction[0] == -self.direction[0] and new_direction[1] == -self.direction[1])
+
+    def _hit_wall(self, head):
+        """
+        Check if the snake's head has hit the wall.
+
+        Args:
+            head (tuple): The (x, y) coordinates of the snake's head.
+
+        Returns:
+            bool: True if the snake's head has hit the wall, False otherwise.
+        """
+        return (head[0] < 0 or head[0] >= self.cols or
+                head[1] < 0 or head[1] >= self.rows)
+
+    def _hit_body(self, head):
+        """
+        Check if the snake's head has hit its body.
+
+        Args:
+            head (tuple): The (x, y) coordinates of the snake's head.
+
+        Returns:
+            bool: True if the snake's head has hit its body, False otherwise.
+        """
+        return head in self.snake[1:]
+        
+    def _eat_food(self, head):
+        """
+        Check if the snake's head has eaten the food.
+
+        Args:
+            head (tuple): The (x, y) coordinates of the snake's head.
+
+        Returns:
+            bool: True if the snake's head has eaten the food, False otherwise.
+        """
+        return head == self.food
+        
+    def step(self, action):
+        # Bestimme neue Richtung und vermeide U-Turns
+        new_direction = self._new_direction(action)
+        if len(self.snake) > 1 and self._is_uturn(new_direction):
             new_direction = self.direction
         else:
             self.direction = new_direction
 
         head = self.snake[0]
         new_head = (head[0] + self.direction[0], head[1] + self.direction[1])
-
-        # Prüfe auf Kollision mit eigenem Körper
-        if new_head in self.snake:
-            reward = -1.2   # Reward für Kollision mit eigenem Körper
+        
+        # Kollisionsprüfungen vor dem Einfügen
+        if self._hit_wall(new_head):
+            reward = self.penalty_for_hit_wall
+            self.done = True
             terminated = True
             truncated = False
-            return self._get_observation(), reward, terminated, truncated, {}
-
-        # Prüfe auf Kollision mit Wand
-        if (new_head[0] < 0 or new_head[0] >= self.cols or
-            new_head[1] < 0 or new_head[1] >= self.rows):
-            reward = -1   # Reward für Kollision mit der Wand
+            return self._get_observation(), reward, terminated, truncated, {"score": self.score}
+        if self._hit_body(new_head):
+            reward = self.penalty_for_hit_body
+            self.done = True
             terminated = True
             truncated = False
-            return self._get_observation(), reward, terminated, truncated, {}
+            return self._get_observation(), reward, terminated, truncated, {"score": self.score}
 
-        # Schlange bewegen
+        # Kein Kollisionsfehler: Neuer Kopf einfügen
         self.snake.insert(0, new_head)
-        if new_head == self.food:
-            reward = 1
+        
+        if self._eat_food(new_head):
+            reward = self.reward_for_food
             self.score += 1
             self._place_food()
         else:
             reward = 0
-            self.snake.pop()  # Entferne das letzte Segment, wenn kein Essen erreicht wurde
+            self.snake.pop()  # Schwanzsegment entfernen
 
-        # Füge eine kleine Schrittstrafe hinzu
-        reward += -0.02
         terminated = False
         truncated = False
-        info = {"score": self.score}
-
-        return self._get_observation(), reward, terminated, truncated, info
+        return self._get_observation(), reward, terminated, truncated, {"score": self.score}
 
     def _get_observation(self):
         """
@@ -138,15 +200,23 @@ class SnakeEnv(gym.Env):
         return obs_vector
 
     def get_grid(self):
-        """Gibt das Gitter (2D-Array) für Visualisierungszwecke zurück: 0 = leer, 1 = Schlange, 2 = Essen, 3 = Schlangenkopf."""
-        grid = np.zeros((self.rows, self.cols), dtype=np.int32)
+        grid = np.zeros((self.grid_size, self.grid_size), dtype=int)
         for i, (x, y) in enumerate(self.snake):
-            grid[y, x] = 3 if i == 0 else 1
-        grid[self.food[1], self.food[0]] = 2
+            if 0 <= x < self.grid_size and 0 <= y < self.grid_size:
+                # Wenn die Schlange tot ist, Kopf als 'X' markieren (Wert 4)
+                if i == 0:
+                    grid[y, x] = 4 if self.done else 3
+                else:
+                    grid[y, x] = 1
+            else:
+                print(f"Index out of bounds: x={x}, y={y}")
+        if 0 <= self.food[0] < self.grid_size and 0 <= self.food[1] < self.grid_size:
+            grid[self.food[1], self.food[0]] = 2
+        else:
+            print(f"Food index out of bounds: x={self.food[0]}, y={self.food[1]}")
         return grid
 
     def render(self, mode='human'):
-        """Einfache textbasierte Darstellung des Gitters."""
         grid = self.get_grid()
         render_str = ""
         for row in grid:
@@ -159,6 +229,8 @@ class SnakeEnv(gym.Env):
                     render_str += "F "
                 elif cell == 3:
                     render_str += "H "
+                elif cell == 4:
+                    render_str += "X "  # Kopf als 'X', wenn tot
             render_str += "\n"
         print(render_str)
 

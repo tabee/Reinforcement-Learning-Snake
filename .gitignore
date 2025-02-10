@@ -1,6 +1,14 @@
 # reinforcement learning snake game
 tensorboard/
-models/checkpoints/
+models/checkpoints_config0/
+models/checkpoints_config1/
+models/checkpoints_config2/
+models/checkpoints_config3/
+models/best_model_config0/
+models/best_model_config1/
+models/best_model_config2/
+models/best_model_config3/
+test_results.txt
 logs/
 
 # Byte-compiled / optimized / DLL files
