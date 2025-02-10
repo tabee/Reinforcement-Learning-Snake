@@ -119,6 +119,12 @@ def train_ppo(total_timesteps, model=None):
         model.set_env(env)
         model.verbose = 1
         model.tensorboard_log = "./tensorboard/"
+        print("model loaded")
+        # Setze die Lernrate des Optimizers
+        model.lr_schedule = lambda _: 0.0001
+        for param_group in model.policy.optimizer.param_groups:
+            param_group['lr'] = 0.0001
+        print("model config loaded")
     
     model.learn(total_timesteps=total_timesteps, progress_bar=True, callback=callbacks)
     model.save("./models/ppo_snake_"+config.get("name"))
@@ -132,10 +138,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     ppo_model = None
+    # Import if you want to load a model, load the model and retrain it
+    # there is a learning_rate for retraining the model in the code above
+    # if you want to change the config, change in the code above
+    # if you retrian the model, it will be saved in the same directory wit the name of the config
+    # src/train.py --load ppo_snake_config2_base --timesteps 10000 > lod the model with this name, 
+    # re-train it and will be saved as ppo_snake_config2 because of the config name!!!
+    # you see, here is a lot to d, but it is possible to do it :)
+    
     
     if args.load != None:
         print("lodaded model: ", args.load)
-        ppo_model = PPO.load("./models/" + args.load)
+        ppo_model = PPO.load("./models/" + args.load) # Load the model NOT THE CONFIG
         
     if args.timesteps:
         print("timesteps: ", args.timesteps)
